@@ -773,7 +773,7 @@ Proof.
     * simpl. intros H. inversion H.
 Qed.
 
-Theorem bin_nat_bin:
+Theorem binary_inverse:
   forall b : bin, nat_to_bin (bin_to_nat b) = normalize b.
 Proof.
   induction b.
