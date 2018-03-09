@@ -1317,8 +1317,8 @@ Fixpoint incr (b : bin) : bin :=
 Fixpoint bin_to_nat (b : bin) : nat :=
   match b with
   | Z => O
-  | D b' => mult 2 (bin_to_nat b')
-  | C b' => plus 1 (mult 2 (bin_to_nat b'))
+  | D b' => (bin_to_nat b') + (bin_to_nat b')
+  | C b' => S ((bin_to_nat b') + (bin_to_nat b'))
   end.
   
 Example test_bin_incr0 : bin_to_nat Z = 0.

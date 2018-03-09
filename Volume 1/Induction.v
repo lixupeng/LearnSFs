@@ -645,6 +645,13 @@ Theorem plus_swap' : forall n m p : nat,
   n + (m + p) = m + (n + p).
 Proof.
   intros n m p.
+  replace (m + p) with (p + m).
+  rewrite -> plus_assoc.
+  rewrite -> plus_comm.
+  reflexivity.
+  rewrite -> plus_comm.
+  reflexivity.
+Qed.
   
 (** [] *)
 
@@ -673,7 +680,21 @@ Proof.
     definitions to make the property easier to prove, feel free to
     do so! *)
 
-(* FILL IN HERE *)
+Theorem bin_to_nat_pres_incr:
+  forall bn : bin, bin_to_nat(incr bn) = S (bin_to_nat bn).
+Proof.
+  induction bn as [|bn' IHbn'|bn'' IHbn''].  
+  - reflexivity.
+  - reflexivity.
+  - simpl.
+    rewrite -> IHbn''. simpl. 
+    rewrite -> plus_n_Sm.
+    rewrite -> plus_n_Sm.
+    rewrite -> plus_n_Sm.
+    reflexivity.
+Qed.
+
+
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced (binary_inverse)  *)
@@ -701,8 +722,74 @@ Proof.
 
     Again, feel free to change your earlier definitions if this helps
     here. *)
+    
+    
+Fixpoint nat_to_bin (n : nat) : bin :=
+  match n with
+  | O => Z
+  | S n' => incr (nat_to_bin n')
+  end.
 
-(* FILL IN HERE *)
+Theorem nat_bin_nat:
+  forall n : nat, bin_to_nat (nat_to_bin n) = n.
+Proof.
+  induction n as [|n' IHn'].
+  - reflexivity.
+  - simpl. rewrite -> bin_to_nat_pres_incr. rewrite -> IHn'. reflexivity.
+Qed.
+
+Fixpoint normalize (b : bin) : bin :=
+  match b with
+  | Z => Z
+  | D b' => 
+      match (normalize b') with
+      | Z => Z
+      | D b'' => D (D b'')
+      | C b'' => D (C b'')
+      end
+  | C b' => C (normalize b')
+  end.
+  
+Lemma NN_to_bin: forall n:nat, nat_to_bin (n + n) = match (nat_to_bin n) with
+                                                    | Z => Z 
+                                                    | D b => D (D b) 
+                                                    | C b => D (C b) 
+                                                    end.
+Proof.
+  induction n. 
+  - reflexivity. 
+  - simpl. rewrite <- plus_n_Sm. simpl. rewrite -> IHn. 
+    destruct (nat_to_bin n).
+    + reflexivity. + reflexivity. + reflexivity.
+Qed.
+Lemma bin_inverse_Z: forall b:bin, nat_to_bin (bin_to_nat b) = Z -> 
+                            nat_to_bin (bin_to_nat b + bin_to_nat b) = Z.
+Proof.
+  intros b. destruct (bin_to_nat b).
+  - reflexivity. 
+  - simpl. destruct (nat_to_bin n).
+    * simpl. intros H. inversion H.
+    * simpl. intros H. inversion H.
+    * simpl. intros H. inversion H.
+Qed.
+
+Theorem bin_nat_bin:
+  forall b : bin, nat_to_bin (bin_to_nat b) = normalize b.
+Proof.
+  induction b.
+  - reflexivity.
+  - simpl. destruct (normalize b).
+    + apply bin_inverse_Z. apply IHb. 
+    + rewrite -> NN_to_bin. rewrite -> IHb. reflexivity.
+    + rewrite -> NN_to_bin. rewrite -> IHb. reflexivity. 
+  - simpl. destruct (normalize b).
+    + replace (nat_to_bin (bin_to_nat b + bin_to_nat b)) with Z.
+      reflexivity. symmetry. apply bin_inverse_Z. apply IHb. 
+    + rewrite -> NN_to_bin. rewrite -> IHb. reflexivity. 
+    + rewrite -> NN_to_bin. rewrite -> IHb. reflexivity. 
+Qed.
+    
+
 (** [] *)
 
 
