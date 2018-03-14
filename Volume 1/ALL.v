@@ -6619,15 +6619,30 @@ Qed.
     lemma below.  (Of course, your definition should _not_ just
     restate the left-hand side of [All_In].) *)
 
-Fixpoint All {T : Type} (P : T -> Prop) (l : list T) : Prop
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint All {T : Type} (P : T -> Prop) (l : list T) : Prop :=
+  match l with
+  | [] => True
+  | h::t => P h /\ All P t
+  end.
 
 Lemma All_In :
   forall T (P : T -> Prop) (l : list T),
     (forall x, In x l -> P x) <->
     All P l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. split.
+  - induction l.
+    + reflexivity.
+    + simpl. intros.
+      split. 
+      * apply H. left. reflexivity.
+      * apply IHl. intros. apply H. right. apply H0.
+  - induction l.
+    + simpl. intros. inversion H0.
+    + simpl. intros [Hx Ha] x0. intros [Px|PI].
+      * rewrite <- Px. apply Hx.
+      * apply IHl. apply Ha. apply PI.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (combine_odd_even)  *)
@@ -6637,8 +6652,8 @@ Proof.
     equivalent to [Podd n] when [n] is odd and equivalent to [Peven n]
     otherwise. *)
 
-Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop :=
+  fun n => (evenb n = true -> Peven n) /\ (oddb n = true -> Podd n).
 
 (** To test your definition, prove the following facts: *)
 
@@ -6648,7 +6663,11 @@ Theorem combine_odd_even_intro :
     (oddb n = false -> Peven n) ->
     combine_odd_even Podd Peven n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold combine_odd_even.
+  split. 
+  + intros T. apply H0. unfold oddb. rewrite -> T. reflexivity.
+  + apply H.
+Qed.
 
 Theorem combine_odd_even_elim_odd :
   forall (Podd Peven : nat -> Prop) (n : nat),
@@ -6656,7 +6675,9 @@ Theorem combine_odd_even_elim_odd :
     oddb n = true ->
     Podd n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold combine_odd_even. intros Podd Peven n [EVEN ODD] Hodd.
+  apply ODD. apply Hodd.
+Qed.
 
 Theorem combine_odd_even_elim_even :
   forall (Podd Peven : nat -> Prop) (n : nat),
@@ -6664,7 +6685,10 @@ Theorem combine_odd_even_elim_even :
     oddb n = false ->
     Peven n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold combine_odd_even. intros Po Pe n [E O] H.
+  apply E. rewrite <- negb_involutive with (b:=evenb n).
+  unfold oddb in H. rewrite -> H. reflexivity.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -6761,6 +6785,8 @@ Qed.
     wildcards as arguments to be inferred, or to declare some
     hypotheses to a theorem as implicit by default.  These features
     are illustrated in the proof below. *)
+    
+
 
 Example lemma_application_ex :
   forall {n : nat} {ns : list nat},
@@ -6900,7 +6926,21 @@ Definition tr_rev {X} (l : list X) : list X :=
     case.  Prove that the two definitions are indeed equivalent. *)
 
 Lemma tr_rev_correct : forall X, @tr_rev X = @rev X.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros X. apply functional_extensionality.
+  unfold tr_rev.
+  induction x.
+  - reflexivity.
+  - simpl. rewrite <- IHx. simpl. 
+    assert (H : forall l1 l2 : list X,
+                rev_append l1 l2 = rev l1 ++ l2).
+    { induction l1. 
+      - intros l2. reflexivity. 
+      - intros l2'. simpl. rewrite -> IHl1 with(l2:=x1::l2').
+        rewrite <- app_assoc. simpl. reflexivity. }
+    rewrite (H x0 [x]). rewrite -> IHx. reflexivity.
+Qed.        
+      
 (** [] *)
 
 (* ================================================================= *)
@@ -6934,8 +6974,14 @@ Theorem evenb_double_conv : forall n,
   exists k, n = if evenb n then double k
                 else S (double k).
 Proof.
-  (* Hint: Use the [evenb_S] lemma from [Induction.v]. *)
-  (* FILL IN HERE *) Admitted.
+  induction n as [|n [k Hn]].
+  - exists 0. reflexivity.
+  - destruct (evenb n) eqn:N;rewrite evenb_S; rewrite N; simpl. 
+    + exists k. rewrite <- Hn. reflexivity.
+    + exists (S k). rewrite Hn. reflexivity.
+Qed.
+      
+      
 (** [] *)
 
 Theorem even_bool_prop : forall n,
@@ -7053,12 +7099,22 @@ Proof. apply even_bool_prop. reflexivity. Qed.
 Lemma andb_true_iff : forall b1 b2:bool,
   b1 && b2 = true <-> b1 = true /\ b2 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b1 b2. split.
+  - destruct b1,b2; try(simpl; intros H; inversion H).
+    split;reflexivity.
+  - intros [H1 H2]. rewrite H1. rewrite H2. reflexivity.
+Qed.
 
 Lemma orb_true_iff : forall b1 b2,
   b1 || b2 = true <-> b1 = true \/ b2 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b1 b2. split.
+  - destruct b1; simpl; intros; [left|right]. 
+    + reflexivity. + apply H. 
+  - intros [H|H]; rewrite H. 
+    + reflexivity. + destruct b1; reflexivity.
+Qed. 
+  
 (** [] *)
 
 (** **** Exercise: 1 star (beq_nat_false_iff)  *)
